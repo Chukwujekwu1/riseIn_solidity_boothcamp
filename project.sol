@@ -13,6 +13,7 @@ contract vote {
         uint256 pass; // Number of pass votes
         uint256 total_vote_to_end; // When the total votes in the proposal reaches this limit, proposal ends
         bool current_state; // This shows the current state of the proposal, meaning whether if passes of fails
+        bool is_active; // This shows if others can vote to our contract
     }
 
     //  this map stores the proposal after people have voted
@@ -39,4 +40,31 @@ contract vote {
         );
         _;
     }
+
+//  this checks if the voting is still active before it allows the function to run 
+    modifier active() {
+        require(
+            Proposal_history[counter].is_active == true,
+            "Voting has ended"
+        );
+        _;
+    }
+
+//  this function loops through the array voted_adddresses to check if an address has voted
+    function isVoted(address _addr) public view active returns (bool) {
+        for (uint i = 0; i < voted_addresses.length; i++) {
+            if (voted_addresses[i] == _addr) {
+                return true;
+            } 
+        }
+        return false;
+    }
+
+// this allow only people who have voted to run the function
+    modifier newVoter(address _address){
+        require(!isVoted(_address), "Address has not voted");
+        _;
+    }
+
+    
 }
