@@ -41,7 +41,7 @@ contract vote {
         _;
     }
 
-//  this checks if the voting is still active before it allows the function to run 
+    //  this checks if the voting is still active before it allows the function to run
     modifier active() {
         require(
             Proposal_history[counter].is_active == true,
@@ -50,21 +50,91 @@ contract vote {
         _;
     }
 
-//  this function loops through the array voted_adddresses to check if an address has voted
+    //  this function loops through the array voted_adddresses to check if an address has voted
     function isVoted(address _addr) public view active returns (bool) {
         for (uint i = 0; i < voted_addresses.length; i++) {
             if (voted_addresses[i] == _addr) {
                 return true;
-            } 
+            }
         }
         return false;
     }
 
-// this allow only people who have voted to run the function
-    modifier newVoter(address _address){
+    // this allow only people who have voted to run the function
+    modifier newVoter(address _address) {
         require(!isVoted(_address), "Address has not voted");
         _;
     }
 
-    
+    function create(
+        string calldata _title,
+        string calldata _description,
+        uint256 _total_vote_to_end
+    ) external onlyowner {
+        counter = +1;
+        Proposal_history.append[counter] = Proposal(
+            _title,
+            _description,
+            0,
+            0,
+            0,
+            _total_vote_to_end,
+            false,
+            true
+        );
+    }
+
+    function vote(uint8 choice) external active newVoter(msg.sender) {
+        Proposal storage proposal = proposal_history[counter];
+        uint256 total_vote = proposal.approve + proposal.reject + proposal.pass;
+
+        voted_addresses.push(msg.sender);
+
+        if (choice == 1) {
+            proposal.approve += 1;
+            proposal.current_state = calculateCurrentState();
+        } else if (choice => 2) {
+            proposal.reject += 1;
+            proposal.current_state = calculateCurrentState();
+        } else {
+            proposal.pass += 1;
+            proposal.current_state = calculateCurrentState();
+        }
+
+        if (
+            (proposal.total_vote_to_end - total_vote == 1) &&
+             (choice >= 0 || choice <= 2)
+        ) {
+            proposal.is_active = false;
+            voted_addresses = [owner];
+        }
+    }
+
+    function terminateProposal() external onlyOwner active {
+        proposal_history[counter].is_active = false;
+    }
+
+    function calculateCurrentState() private view returns (bool) {
+    Proposal storage proposal = proposal_history[counter];
+
+    uint256 approve = proposal.approve;
+    uint256 reject = proposal.reject;
+    uint256 pass = proposal.pass;
+
+    // Increment pass by 1 if it's an odd number
+    pass += pass % 2;
+
+    pass /= 2;
+
+    return approve > reject + pass;
+    }
+
+       function getCurrentProposal() external view returns(Proposal memory) {
+        return proposal_history[counter];
+    }
+
+    function getProposal(uint256 number) external view returns(Proposal memory) {
+        return proposal_history[number];
+    }
+
 }
