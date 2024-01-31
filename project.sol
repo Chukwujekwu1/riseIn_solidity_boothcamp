@@ -71,8 +71,8 @@ contract vote {
         string calldata _description,
         uint256 _total_vote_to_end
     ) external onlyowner {
-        counter = +1;
-        Proposal_history.append[counter] = Proposal(
+        counter += 1;
+        Proposal_history[counter] = Proposal(
             _title,
             _description,
             0,
@@ -84,8 +84,8 @@ contract vote {
         );
     }
 
-    function vote(uint8 choice) external active newVoter(msg.sender) {
-        Proposal storage proposal = proposal_history[counter];
+    function voter(uint8 choice) external active newVoter(msg.sender) {
+        Proposal storage proposal = Proposal_history[counter];
         uint256 total_vote = proposal.approve + proposal.reject + proposal.pass;
 
         voted_addresses.push(msg.sender);
@@ -93,7 +93,7 @@ contract vote {
         if (choice == 1) {
             proposal.approve += 1;
             proposal.current_state = calculateCurrentState();
-        } else if (choice => 2) {
+        } else if (choice >= 2) {
             proposal.reject += 1;
             proposal.current_state = calculateCurrentState();
         } else {
@@ -110,12 +110,13 @@ contract vote {
         }
     }
 
-    function terminateProposal() external onlyOwner active {
-        proposal_history[counter].is_active = false;
+    function terminateProposal() external onlyowner active {
+        Proposal_history[counter].is_active = false;
     }
 
+
     function calculateCurrentState() private view returns (bool) {
-    Proposal storage proposal = proposal_history[counter];
+    Proposal storage proposal = Proposal_history[counter];
 
     uint256 approve = proposal.approve;
     uint256 reject = proposal.reject;
@@ -130,11 +131,11 @@ contract vote {
     }
 
        function getCurrentProposal() external view returns(Proposal memory) {
-        return proposal_history[counter];
+        return Proposal_history[counter];
     }
 
     function getProposal(uint256 number) external view returns(Proposal memory) {
-        return proposal_history[number];
+        return Proposal_history[number];
     }
 
 }
